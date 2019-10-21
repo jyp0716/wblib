@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--refer', help='kaldi 格式的 refer 文件，格式与best相同')
     parser.add_argument('--filter', help='a filter file used in sed, filter被作用于best和refer', default=None)
     parser.add_argument('--special_word', help='a special word, refer中的 special word 可以用来匹配任意多的词', default='<?>')
+    parser.add_argument('--key_word', help='calculate key word stats, 计算有关key word的统计量', default=None)
     parser.add_argument('--oracle', action='store_true', help='如果指定，则计算oracle WER')
     args = parser.parse_args()
 
@@ -58,7 +59,10 @@ def main():
         print('compute WER')
         print('best = %s' % best_file)
         print('refer = %s' % refer_file)
-        err, word, wer = base.CmpWER(best_file, refer_file, sys.stdout, special_word=args.special_word)
+        err, word, wer, \
+        nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,\
+        precision, recall, missingRate, falseAlarmRate, f1_score = \
+            base.CmpWER(best_file, refer_file, sys.stdout, special_word=args.special_word, key_word=args.key_word)
 
     print('\n[Finished]')
     print('best = %s' % args.best)
@@ -72,6 +76,20 @@ def main():
         print('oracle-wer = %.8f' % wer)
     else:
         print('wer = %.8f' % wer)
+    if args.key_word and not args.oracle:
+        print('--------------')
+        print('key word = %s' % args.key_word)
+        print('key word hit = %d' % nTotalKeyHitTP)
+        print('key word deletion false negative = %d ' % nTotalKeyDelFN)
+        print('key word subsitution false positive = %d ' % nTotalKeyRepFP)
+        print('key word subsitution false negative = %d ' % nTotalKeyRepFN)
+        print('key word insertion false positive = %d' % nTotalKeyInsFP)
+        print('precision = %.2f' % precision)
+        print('recall = %.2f' % recall)
+        print('missing rate = %.2f' % missingRate)
+        print('false alarm rate = %.2f' % falseAlarmRate)
+        print('f1-score = %.2f' % f1_score)
+
 
 
 if __name__ == '__main__':
