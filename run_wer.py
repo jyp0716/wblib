@@ -79,7 +79,7 @@ def main():
     if args.key_word and not args.oracle:
         print('--------------')
         print('key word = %s' % args.key_word)
-        print('key word hit = %d' % nTotalKeyHitTP)
+        print('key word hit true positive = %d' % nTotalKeyHitTP)
         print('key word deletion false negative = %d ' % nTotalKeyDelFN)
         print('key word subsitution false positive = %d ' % nTotalKeyRepFP)
         print('key word subsitution false negative = %d ' % nTotalKeyRepFN)
