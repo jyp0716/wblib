@@ -59,6 +59,7 @@ def main():
         print('compute WER')
         print('best = %s' % best_file)
         print('refer = %s' % refer_file)
+        nTotalIns, nTotalDel, nTotalRep, \
         err, word, wer, \
         nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,\
         precision, recall, missingRate, falseAlarmRate, f1_score = \
@@ -71,6 +72,9 @@ def main():
     print('refer = %s' % args.refer)
     print('filter = %s' % args.filter)
     print('errs = %d' % err)
+    print('ins = %d' % nTotalIns)
+    print('del = %d' % nTotalDel)
+    print('sub = %d' % nTotalRep)
     print('words = %d' % word)
     if args.oracle:
         print('oracle-wer = %.8f' % wer)

@@ -669,6 +669,9 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
     nLine = 0
     nTotalWord = 0
     nTotalErr = 0
+    nTotalIns = 0
+    nTotalDel = 0
+    nTotalRep = 0
 
     # Key word error stats
     nTotalKeyHitTP = 0
@@ -704,6 +707,9 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
         res = TxtScore(target, temp_sent, special_word=special_word, key_word=key_word)
         nTotalErr += res['err']
         nTotalWord += res['word']
+        nTotalIns += res['ins']
+        nTotalDel += res['del']
+        nTotalRep += res['rep']
         nTotalKeyHitTP += res["hit_tp_key"]
         nTotalKeyDelFN += res["del_fn_key"]
         nTotalKeyRepFP += res["rep_fp_key"]
@@ -741,7 +747,7 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
     falseAlarmRate = np.float64(1.0 * (nTotalKeyRepFP + nTotalKeyInsFP)) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
     f1_score = np.float64(2 * precision * recall) / (precision + recall)
 
-    return [nTotalErr, nTotalWord, 1.0 * nTotalErr / nTotalWord * 100,
+    return [nTotalIns, nTotalDel, nTotalRep, nTotalErr, nTotalWord, 1.0 * nTotalErr / nTotalWord * 100,
             nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,
             precision, recall, missingRate, falseAlarmRate, f1_score]
 
