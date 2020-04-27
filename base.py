@@ -480,7 +480,7 @@ def nbest_read_to_dict(nbest_file, type=str):
 
 
 # compare two word sequence (array), and return the error number
-def TxtScore(hypos, refer, special_word=None, key_word=None):
+def TxtScore(hypos, refer, special_word=None, key_word=None, index_list=[]):
     """
     compute the err number
 
@@ -543,7 +543,8 @@ def TxtScore(hypos, refer, special_word=None, key_word=None):
     """
 
     res = {'word': 0, 'err': 0, 'none': 0, 'del': 0, 'ins': 0, 'rep': 0, 'hypos': [], 'refer': [],
-           "hit_tp_key": 0, 'del_fn_key': 0, "rep_fp_key": 0, "rep_fn_key": 0, "ins_fp_key" : 0}
+           "hit_tp_key": 0, 'del_fn_key': 0, "rep_fp_key": 0, "rep_fn_key": 0, "ins_fp_key" : 0,
+           'err_index': 0, 'del_index': 0, 'ins_index': 0, 'rep_index': 0}
 
 
     refer_words = refer if isinstance(refer, list) else refer.split()
@@ -629,11 +630,26 @@ def TxtScore(hypos, refer, special_word=None, key_word=None):
     refer_cur = refer_len - 1
     refer_fmt_words = []
     hypos_fmt_words = []
+
     while hypos_cur >= 0 and refer_cur >= 0:
+        # print ("hypos_cur:{} refer_cur:{}".format(hypos_cur, refer_cur))
         res[score_table[hypos_cur][refer_cur][0]] += 1  # add the del/rep/ins error number
         hypos_fmt_words.append(score_table[hypos_cur][refer_cur][3])
         refer_fmt_words.append(score_table[hypos_cur][refer_cur][4])
         [hypos_cur, refer_cur] = score_table[hypos_cur][refer_cur][2]
+
+        if len(index_list) > 0 :
+            if str(refer_cur) in index_list:
+                if score_table[hypos_cur][refer_cur][0] != "none":
+                    res["err_index"] += 1
+                if score_table[hypos_cur][refer_cur][0] == "del":
+                    res["del_index"] += 1
+                if score_table[hypos_cur][refer_cur][0] == "ins":
+                    res["ins_index"] += 1
+                if score_table[hypos_cur][refer_cur][0] == "rep":
+                    res["rep_index"] += 1
+                # print ("ref_index: {} hypo_index: {} distance: {} refer: {}, hypo: {}".format(refer_cur, hypos_cur, score_table[hypos_cur][refer_cur][1], score_table[hypos_cur][refer_cur][4], score_table[hypos_cur][refer_cur][3]))
+
         if key_word is not None:
             if score_table[hypos_cur][refer_cur][0] == "none" and score_table[hypos_cur][refer_cur][4] == key_word:
                 res["hit_tp_key"] += 1
@@ -646,6 +662,7 @@ def TxtScore(hypos, refer, special_word=None, key_word=None):
             if score_table[hypos_cur][refer_cur][0] == "ins" and score_table[hypos_cur][refer_cur][3].strip('^') == key_word:
                 res["ins_fp_key"] += 1
 
+    print ("err_index_total: {}".format(res["err_index"]))
     refer_fmt_words.reverse()
     hypos_fmt_words.reverse()
 
@@ -665,13 +682,20 @@ def TxtScore(hypos, refer, special_word=None, key_word=None):
 
 
 # calculate the WER given best file
-def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_word=None, key_word=None):
+def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_word=None, key_word=None, index_file=None):
     nLine = 0
     nTotalWord = 0
     nTotalErr = 0
     nTotalIns = 0
     nTotalDel = 0
     nTotalRep = 0
+
+    # errors in refer index provided
+    nTotalWordIndex = 0
+    nTotalErrIndex = 0
+    nTotalInsIndex = 0
+    nTotalDelIndex = 0
+    nTotalRepIndex = 0
 
     # Key word error stats
     nTotalKeyHitTP = 0
@@ -683,6 +707,13 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
     f1 = open(best) if isinstance(best, str) else best
     f2 = open(temp) if isinstance(temp, str) else temp
     fout = open(log_str_or_io, 'wt') if isinstance(log_str_or_io, str) else log_str_or_io
+
+    index_dict = dict()
+    if index_file is not None:
+        f3 = open(index_file) if isinstance(index_file, str) else index_file
+        for line in f3:
+            a = line.split()
+            index_dict[a[0]] = a[1:]
 
     # using the label to match sentences
     # first load the correct sentences
@@ -699,13 +730,27 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
         except KeyError:
             raise("[{}.CmpWER] cannot find the label={} in template".format(__name__, a[0]))
 
+        if index_file is not None:
+            try:
+                index_list = index_dict[a[0]]
+            except KeyError:
+                raise("[{}.CmpWER] cannot find the label={} in index file".format(__name__, a[0]))
+        else:
+            index_list = []
+
         target = a[1:]
         if sentence_process_fun is not None:
             target = sentence_process_fun(target)
             temp_sent = sentence_process_fun(temp_sent)
 
-        res = TxtScore(target, temp_sent, special_word=special_word, key_word=key_word)
+        print (index_list)
+        res = TxtScore(target, temp_sent, special_word=special_word, key_word=key_word, index_list=index_list)
         nTotalErr += res['err']
+        nTotalErrIndex += res['err_index']
+        nTotalWordIndex += len(index_list)
+        nTotalInsIndex += res['ins_index']
+        nTotalDelIndex += res['del_index']
+        nTotalRepIndex += res['rep_index']
         nTotalWord += res['word']
         nTotalIns += res['ins']
         nTotalDel += res['del']
@@ -719,6 +764,8 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
         if fout is not None:
             fout.write('[{}] {}\n'.format(nLine, a[0]))
             fout.write('[nDist={0}] [{0}/{1}] [{2}/{3}]\n'.format(res['err'], res['word'], nTotalErr, nTotalWord))
+            if index_file is not None:
+                fout.write('[nDist_index={0}] [{0}/{1}] [{2}/{3}]\n'.format(res['err_index'], len(index_list), nTotalErrIndex, nTotalWordIndex))
             if key_word is not None:
                 fout.write('[KeyWord={}] [Hit_TP={}] [Del_FN={}] [Rep_FP={}] [Rep_FN={}] [Ins_FP={}]\n'
                            .format(key_word, res["hit_tp_key"], res["del_fn_key"], res["rep_fp_key"], res["rep_fn_key"], res["ins_fp_key"]))
@@ -740,16 +787,25 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
     # Missing Rate:  MR = FN / (TP + FN)
     # False Alarm Rate: FAR = FP / (TP + FP)
     # F1 score = 2 * P * R / (P + R)
+    
+    precision = 0.0
+    recall = 0.0
+    missingRate = 0.0
+    falseAlarmRate = 0.0
+    f1_score = 0.0
 
-    precision = np.float64(1.0 * nTotalKeyHitTP) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
-    recall = np.float64(1.0 * nTotalKeyHitTP) / (nTotalKeyHitTP + nTotalKeyDelFN + nTotalKeyDelFN) * 100
-    missingRate = np.float64(1.0 * (nTotalKeyDelFN + nTotalKeyDelFN)) / (nTotalKeyHitTP + nTotalKeyDelFN + nTotalKeyDelFN) * 100
-    falseAlarmRate = np.float64(1.0 * (nTotalKeyRepFP + nTotalKeyInsFP)) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
-    f1_score = np.float64(2 * precision * recall) / (precision + recall)
+    if key_word is not None:
+        precision = np.float64(1.0 * nTotalKeyHitTP) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
+        recall = np.float64(1.0 * nTotalKeyHitTP) / (nTotalKeyHitTP + nTotalKeyDelFN + nTotalKeyDelFN) * 100
+        missingRate = np.float64(1.0 * (nTotalKeyDelFN + nTotalKeyDelFN)) / (nTotalKeyHitTP + nTotalKeyDelFN + nTotalKeyDelFN) * 100
+        falseAlarmRate = np.float64(1.0 * (nTotalKeyRepFP + nTotalKeyInsFP)) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
+        f1_score = np.float64(2 * precision * recall) / (precision + recall)
+
 
     return [nTotalIns, nTotalDel, nTotalRep, nTotalErr, nTotalWord, 1.0 * nTotalErr / nTotalWord * 100,
             nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,
-            precision, recall, missingRate, falseAlarmRate, f1_score]
+            precision, recall, missingRate, falseAlarmRate, f1_score,
+            nTotalInsIndex, nTotalDelIndex, nTotalRepIndex, nTotalErrIndex, nTotalWordIndex, 1.0 * nTotalErrIndex / nTotalWordIndex * 100]
 
 
 def CmpCER(best, temp, log_str_or_io=None):

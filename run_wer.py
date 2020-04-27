@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--filter', help='a filter file used in sed, filter被作用于best和refer', default=None)
     parser.add_argument('--special_word', help='a special word, refer中的 special word 可以用来匹配任意多的词', default='<?>')
     parser.add_argument('--key_word', help='calculate key word stats, 计算有关key word的统计量', default=None)
+    parser.add_argument('--index', help='kaldi 格式的 index file, 指定纳入计算的refer index', default=None)
     parser.add_argument('--oracle', action='store_true', help='如果指定，则计算oracle WER')
     args = parser.parse_args()
 
@@ -62,8 +63,10 @@ def main():
         nTotalIns, nTotalDel, nTotalRep, \
         err, word, wer, \
         nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,\
-        precision, recall, missingRate, falseAlarmRate, f1_score = \
-            base.CmpWER(best_file, refer_file, sys.stdout, special_word=args.special_word, key_word=args.key_word)
+        precision, recall, missingRate, falseAlarmRate, f1_score,\
+        nTotalInsIndex, nTotalDelIndex, nTotalRepIndex, \
+        err_index, word_index, wer_index =\
+            base.CmpWER(best_file, refer_file, sys.stdout, special_word=args.special_word, key_word=args.key_word, index_file=args.index)
 
     print('\n[Finished]')
     print('best = %s' % args.best)
@@ -93,6 +96,15 @@ def main():
         print('missing rate = %.2f' % missingRate)
         print('false alarm rate = %.2f' % falseAlarmRate)
         print('f1-score = %.2f' % f1_score)
+    if args.index and not args.oracle:
+        print('--------------')
+        print('index = %s' % args.index)
+        print('errs_index = %d' % err_index)
+        print('ins_index = %d' % nTotalInsIndex)
+        print('del_index = %d' % nTotalDelIndex)
+        print('sub_index = %d' % nTotalRepIndex)
+        print('words_index = %d' % word_index)
+        print('wer_index = %.8f' % wer_index)
 
 
 
