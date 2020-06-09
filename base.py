@@ -639,7 +639,7 @@ def TxtScore(hypos, refer, special_word=None, key_word=None, index_list=[]):
         [hypos_cur, refer_cur] = score_table[hypos_cur][refer_cur][2]
 
         if len(index_list) > 0 :
-            if str(refer_cur) in index_list:
+            if str(refer_cur - 1) in index_list:
                 if score_table[hypos_cur][refer_cur][0] != "none":
                     res["err_index"] += 1
                 if score_table[hypos_cur][refer_cur][0] == "del":
@@ -648,7 +648,7 @@ def TxtScore(hypos, refer, special_word=None, key_word=None, index_list=[]):
                     res["ins_index"] += 1
                 if score_table[hypos_cur][refer_cur][0] == "rep":
                     res["rep_index"] += 1
-                # print ("ref_index: {} hypo_index: {} distance: {} refer: {}, hypo: {}".format(refer_cur, hypos_cur, score_table[hypos_cur][refer_cur][1], score_table[hypos_cur][refer_cur][4], score_table[hypos_cur][refer_cur][3]))
+                print ("ref_index: {} hypo_index: {} distance: {} refer: {}, hypo: {}".format(refer_cur, hypos_cur, score_table[hypos_cur][refer_cur][1], score_table[hypos_cur][refer_cur][4], score_table[hypos_cur][refer_cur][3]))
 
         if key_word is not None:
             if score_table[hypos_cur][refer_cur][0] == "none" and score_table[hypos_cur][refer_cur][4] == key_word:
