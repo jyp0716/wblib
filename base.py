@@ -662,7 +662,8 @@ def TxtScore(hypos, refer, special_word=None, key_word=None, index_list=[]):
             if score_table[hypos_cur][refer_cur][0] == "ins" and score_table[hypos_cur][refer_cur][3].strip('^') == key_word:
                 res["ins_fp_key"] += 1
 
-    print ("err_index_total: {}".format(res["err_index"]))
+    if len(index_list) > 0 :
+        print ("err_index_total: {}".format(res["err_index"]))
     refer_fmt_words.reverse()
     hypos_fmt_words.reverse()
 
@@ -743,7 +744,8 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
             target = sentence_process_fun(target)
             temp_sent = sentence_process_fun(temp_sent)
 
-        print (index_list)
+        if index_file is not None:
+            print (index_list)
         res = TxtScore(target, temp_sent, special_word=special_word, key_word=key_word, index_list=index_list)
         nTotalErr += res['err']
         nTotalErrIndex += res['err_index']
@@ -801,11 +803,13 @@ def CmpWER(best, temp, log_str_or_io=None, sentence_process_fun=None, special_wo
         falseAlarmRate = np.float64(1.0 * (nTotalKeyRepFP + nTotalKeyInsFP)) / (nTotalKeyHitTP + nTotalKeyRepFP + nTotalKeyInsFP) * 100
         f1_score = np.float64(2 * precision * recall) / (precision + recall)
 
+    wer = -1.0 if nTotalWord == 0 else 1.0 * nTotalErr / nTotalWord * 100.0
+    wer_index = -1.0 if nTotalWordIndex == 0 else 1.0 * nTotalErrIndex / nTotalWordIndex * 100.0
 
-    return [nTotalIns, nTotalDel, nTotalRep, nTotalErr, nTotalWord, 1.0 * nTotalErr / nTotalWord * 100,
+    return [nTotalIns, nTotalDel, nTotalRep, nTotalErr, nTotalWord, wer,
             nTotalKeyHitTP, nTotalKeyDelFN, nTotalKeyRepFP, nTotalKeyRepFN, nTotalKeyInsFP,
             precision, recall, missingRate, falseAlarmRate, f1_score,
-            nTotalInsIndex, nTotalDelIndex, nTotalRepIndex, nTotalErrIndex, nTotalWordIndex, 1.0 * nTotalErrIndex / nTotalWordIndex * 100]
+            nTotalInsIndex, nTotalDelIndex, nTotalRepIndex, nTotalErrIndex, nTotalWordIndex, wer_index]
 
 
 def CmpCER(best, temp, log_str_or_io=None):
